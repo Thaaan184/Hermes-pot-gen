@@ -486,6 +486,40 @@ app.post('/api/canvas', async (req, res) => {
   }
 });
 
+// Rename canvas
+app.patch('/api/canvas/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  try {
+    const token = await getToken();
+    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
+    const data = await penpotRequest('rename-file', { id, name });
+    res.json({ ok: true, id, name: data.name || name });
+  } catch (e) {
+    console.error('[canvas rename]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Delete canvas
+app.delete('/api/canvas/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const token = await getToken();
+    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
+    try {
+      await penpotRequest('delete-file', { id });
+    } catch {
+      await penpotRequest('mark-file-for-deletion', { id });
+    }
+    res.json({ ok: true, id });
+  } catch (e) {
+    console.error('[canvas delete]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Chat SSE endpoint
 app.post('/api/chat', async (req, res) => {
   const { prompt = '', canvasId = '', pageId = '', selectedIds = [] } = req.body || {};
