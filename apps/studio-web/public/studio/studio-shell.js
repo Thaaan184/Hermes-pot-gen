@@ -237,8 +237,20 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', guardNavigation);
+    document.addEventListener('DOMContentLoaded', () => {
+      guardNavigation();
+      setInterval(() => {
+        if (document.querySelector('.main_ui_workspace__workspace')) {
+          mountStudioShell();
+        }
+      }, 400);
+    });
   } else {
     guardNavigation();
+    setInterval(() => {
+      if (document.querySelector('.main_ui_workspace__workspace')) {
+        mountStudioShell();
+      }
+    }, 400);
   }
 })();
