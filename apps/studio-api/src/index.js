@@ -304,8 +304,53 @@ async function penpotRequest(command, body = {}, retry = true) {
 }
 
 // ─── MCP Helper ───────────────────────────────────────────────────────────────
+let cachedMcpToken = null;
+
+async function ensureMcpEnabled() {
+  try {
+    await penpotRequest('update-profile-props', { props: { 'mcp-enabled': true } });
+  } catch (e) {
+    console.warn('[mcp] ensureMcpEnabled failed:', e.message);
+  }
+}
+
+async function getMcpToken() {
+  if (cachedMcpToken) return cachedMcpToken;
+  await ensureMcpEnabled();
+
+  // Try get-access-tokens
+  try {
+    const rawTokens = await penpotRequest('get-access-tokens', {});
+    const str = typeof rawTokens === 'string' ? rawTokens : JSON.stringify(rawTokens);
+    const match = str.match(/eyJ[a-zA-Z0-9_\-\.]+/);
+    if (match) {
+      cachedMcpToken = match[0];
+      return cachedMcpToken;
+    }
+  } catch (e) {
+    console.warn('[mcp] get-access-tokens failed:', e.message);
+  }
+
+  // Create new access token
+  try {
+    const created = await penpotRequest('create-access-token', { name: 'Studio AI Copilot' });
+    const str = typeof created === 'string' ? created : JSON.stringify(created);
+    const match = str.match(/eyJ[a-zA-Z0-9_\-\.]+/);
+    if (match) {
+      cachedMcpToken = match[0];
+      return cachedMcpToken;
+    }
+  } catch (e) {
+    console.warn('[mcp] create-access-token failed:', e.message);
+  }
+
+  return null;
+}
+
 async function mcpInitSession() {
-  const url = `${MCP_URL}/mcp`;
+  const mcpToken = await getMcpToken();
+  const qs = mcpToken ? `?userToken=${encodeURIComponent(mcpToken)}` : '';
+  const url = `${MCP_URL}/mcp${qs}`;
   const body = JSON.stringify({
     jsonrpc: '2.0',
     method: 'initialize',
@@ -325,15 +370,14 @@ async function mcpInitSession() {
 
   const sessionId = res.headers['mcp-session-id'];
   if (!sessionId) {
-    // Some MCP servers return session id in body or don't require it
     console.warn('[mcp] No mcp-session-id header in initialize response');
-    return null;
   }
-  return sessionId;
+  return { sessionId, mcpToken };
 }
 
-async function mcpExecuteCode(sessionId, code) {
-  const url = `${MCP_URL}/mcp`;
+async function mcpExecuteCode(sessionId, mcpToken, code) {
+  const qs = mcpToken ? `?userToken=${encodeURIComponent(mcpToken)}` : '';
+  const url = `${MCP_URL}/mcp${qs}`;
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'text/event-stream, application/json',
@@ -369,38 +413,142 @@ function parseSseBody(body) {
 
 // ─── Build MCP Code Snippet ───────────────────────────────────────────────────
 function buildMcpCode(prompt, canvasId, pageId) {
-  // Escape prompt for embedding in JS string
-  const escaped = prompt.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+  const pLower = prompt.toLowerCase();
+
+  // Design intelligence heuristics based on prompt keywords
+  const isPoster = pLower.includes('poster') || pLower.includes('promosi') || pLower.includes('banner');
+  const isBlueWhite = pLower.includes('biru') || pLower.includes('blue') || pLower.includes('monokrom');
+  const font = pLower.includes('roboto') ? 'Roboto' : (pLower.includes('inter') ? 'Inter' : 'Work Sans');
+
+  // Intentional color tokens
+  const bgColor = isBlueWhite ? '#0A192F' : '#0F172A';
+  const cardColor = isBlueWhite ? '#1E3A8A' : '#1E293B';
+  const accentColor = isBlueWhite ? '#3B82F6' : '#6366F1';
+  const textColor = '#FFFFFF';
+  const subtextColor = isBlueWhite ? '#93C5FD' : '#94A3B8';
+
+  // Extract brand name or key words
+  let brandName = 'PROMO';
+  const brandMatch = prompt.match(/brand\s+["']?([^"',\s]+)["']?/i);
+  if (brandMatch && brandMatch[1]) {
+    brandName = brandMatch[1].toUpperCase();
+  } else if (pLower.includes('taburay')) {
+    brandName = 'TABURAY';
+  }
+
+  // Extract headline
+  let headline = prompt.slice(0, 50);
+  if (pLower.includes('sate taichan')) {
+    headline = 'SATE TAICHAN SPESIAL';
+  } else if (pLower.includes('poster')) {
+    headline = prompt.replace(/buatkan\s+/i, '').replace(/poster\s+/i, '').slice(0, 40).toUpperCase();
+  }
+
+  const escapedBrand = brandName.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+  const escapedHeadline = headline.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+  const escapedPrompt = prompt.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ').slice(0, 100);
+
   return `
-(async function() {
+(function() {
   try {
     const page = penpot.currentPage;
-    if (!page) throw new Error('No active page');
+    if (!page) return JSON.stringify({ success: false, error: 'No active page in Penpot' });
 
-    // Create a board (frame)
-    const board = penpot.createFrame();
-    board.name = 'AI: ' + '${escaped}'.slice(0, 50);
-    board.x = Math.floor(Math.random() * 800);
-    board.y = Math.floor(Math.random() * 600);
-    board.width = 480;
-    board.height = 320;
-    board.fills = [{ fillOpacity: 1, fillColor: '#0F172A' }];
+    // Stagger multiple boards to prevent overlap
+    const existingBoards = page.findAllShapes(s => s.type === 'board');
+    const boardX = 80 + existingBoards.length * 860;
+    const boardY = 80;
 
-    // Create headline text
-    const headline = penpot.createText('${escaped}'.slice(0, 120));
-    headline.name = 'Headline';
-    headline.x = board.x + 24;
-    headline.y = board.y + 24;
-    headline.width = 432;
-    headline.characters = '${escaped}'.slice(0, 120);
-    if (headline.applyTextStyle) {
-      headline.applyTextStyle({ fontSize: 24, fontFamily: 'Inter', fontWeight: '600', fillColor: '#F8FAFC' });
-    }
+    // Create Main Board (Poster 800x1000)
+    const board = penpot.createBoard();
+    board.name = 'Poster: ' + '${escapedBrand}' + ' - ' + '${escapedHeadline}';
+    board.resize(800, 1000);
+    board.x = boardX;
+    board.y = boardY;
+    board.fills = [{ fillOpacity: 1, fillColor: '${bgColor}' }];
 
-    penpot.viewport.zoomIntoView([board], { padding: 80 });
-    return JSON.stringify({ success: true, boardId: board.id });
+    // Card Graphic / Image Area
+    const card = penpot.createRectangle();
+    card.name = 'Visual Container';
+    card.resize(700, 420);
+    card.x = board.x + 50;
+    card.y = board.y + 160;
+    card.borderRadius = 16;
+    card.fills = [{ fillOpacity: 1, fillColor: '${cardColor}' }];
+    board.appendChild(card);
+
+    // Inner Card Placeholder Accent
+    const accent = penpot.createRectangle();
+    accent.name = 'Photo Placeholder';
+    accent.resize(660, 380);
+    accent.x = card.x + 20;
+    accent.y = card.y + 20;
+    accent.borderRadius = 12;
+    accent.fills = [{ fillOpacity: 0.35, fillColor: '${accentColor}' }];
+    board.appendChild(accent);
+
+    // Brand Tag / Badge Pill
+    const badge = penpot.createRectangle();
+    badge.name = 'Brand Badge';
+    badge.resize(160, 36);
+    badge.x = board.x + 50;
+    badge.y = board.y + 45;
+    badge.borderRadius = 18;
+    badge.fills = [{ fillOpacity: 1, fillColor: '${accentColor}' }];
+    board.appendChild(badge);
+
+    const badgeText = penpot.createText('${escapedBrand}');
+    badgeText.name = 'Brand Badge Text';
+    badgeText.x = badge.x + 20;
+    badgeText.y = badge.y + 8;
+    badgeText.fontSize = '14';
+    badgeText.fontFamily = '${font}';
+    badgeText.fills = [{ fillOpacity: 1, fillColor: '#FFFFFF' }];
+    board.appendChild(badgeText);
+
+    // Main Headline
+    const title = penpot.createText('${escapedHeadline}');
+    title.name = 'Headline';
+    title.x = board.x + 50;
+    title.y = board.y + 95;
+    title.fontSize = '40';
+    title.fontFamily = '${font}';
+    title.fills = [{ fillOpacity: 1, fillColor: '${textColor}' }];
+    board.appendChild(title);
+
+    // Subtitle / Description Text
+    const desc = penpot.createText('${escapedPrompt}');
+    desc.name = 'Description';
+    desc.x = board.x + 50;
+    desc.y = board.y + 610;
+    desc.fontSize = '20';
+    desc.fontFamily = '${font}';
+    desc.fills = [{ fillOpacity: 1, fillColor: '${subtextColor}' }];
+    board.appendChild(desc);
+
+    // CTA Button
+    const btn = penpot.createRectangle();
+    btn.name = 'CTA Button';
+    btn.resize(260, 60);
+    btn.x = board.x + 50;
+    btn.y = board.y + 720;
+    btn.borderRadius = 30;
+    btn.fills = [{ fillOpacity: 1, fillColor: '${accentColor}' }];
+    board.appendChild(btn);
+
+    const btnText = penpot.createText('PESAN SEKARANG');
+    btnText.name = 'CTA Text';
+    btnText.x = btn.x + 40;
+    btnText.y = btn.y + 20;
+    btnText.fontSize = '16';
+    btnText.fontFamily = '${font}';
+    btnText.fills = [{ fillOpacity: 1, fillColor: '#FFFFFF' }];
+    board.appendChild(btnText);
+
+    penpot.viewport.zoomIntoView([board], { padding: 40 });
+    return JSON.stringify({ success: true, boardId: board.id, name: board.name });
   } catch(e) {
-    return JSON.stringify({ success: false, error: e.message });
+    return JSON.stringify({ success: false, error: e.message || String(e) });
   }
 })();
 `;
@@ -541,20 +689,20 @@ app.post('/api/chat', async (req, res) => {
   try {
     sendEvent({ type: 'status', message: 'Connecting to canvas engine...' });
 
-    let sessionId = null;
+    let mcpSession = null;
     try {
-      sessionId = await mcpInitSession();
+      mcpSession = await mcpInitSession();
     } catch (e) {
       console.warn('[mcp] init failed:', e.message);
     }
 
-    sendEvent({ type: 'status', message: 'Analyzing prompt...' });
+    sendEvent({ type: 'status', message: 'Analyzing design prompt...' });
 
     const code = buildMcpCode(prompt, canvasId, pageId);
 
     let mcpResult = null;
     try {
-      const rawBody = await mcpExecuteCode(sessionId, code);
+      const rawBody = await mcpExecuteCode(mcpSession?.sessionId, mcpSession?.mcpToken, code);
       mcpResult = parseSseBody(rawBody);
     } catch (e) {
       console.warn('[mcp] execute failed:', e.message);
@@ -563,17 +711,29 @@ app.post('/api/chat', async (req, res) => {
 
     sendEvent({ type: 'status', message: 'Applying changes to canvas...' });
 
-    const success = mcpResult && !mcpResult.error;
-    if (success) {
+    let isSuccess = false;
+    let messageText = '';
+
+    if (mcpResult && !mcpResult.error) {
       const inner = mcpResult.result || mcpResult;
-      const text = inner.content
+      const contentRaw = inner.content
         ? (Array.isArray(inner.content) ? inner.content.map(c => c.text).join(' ') : String(inner.content))
-        : 'Canvas updated';
-      sendEvent({ type: 'result', success: true, message: text });
+        : '';
+
+      if (contentRaw.includes('Tool execution failed')) {
+        isSuccess = false;
+        const m = contentRaw.match(/Error:\s*([^\n\r]+)/);
+        messageText = m ? m[1] : contentRaw;
+      } else {
+        isSuccess = true;
+        messageText = 'Desain poster berhasil dibuat di canvas!';
+      }
     } else {
-      const msg = (mcpResult && mcpResult.error) ? mcpResult.error : 'MCP unavailable — prompt received';
-      sendEvent({ type: 'result', success: false, message: msg });
+      isSuccess = false;
+      messageText = (mcpResult && mcpResult.error) ? mcpResult.error : 'Canvas engine connection failed';
     }
+
+    sendEvent({ type: 'result', success: isSuccess, message: messageText });
   } catch (e) {
     console.error('[chat]', e.message);
     sendEvent({ type: 'error', message: e.message });

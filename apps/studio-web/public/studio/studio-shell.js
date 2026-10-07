@@ -144,7 +144,7 @@
             try {
               const data = JSON.parse(line.slice(5).trim());
               if (data.type === 'status') addBubble(data.message, 'status');
-              else if (data.type === 'result') addBubble(data.message || 'Completed!', 'success');
+              else if (data.type === 'result') addBubble(data.message || 'Completed!', data.success ? 'success' : 'error');
               else if (data.type === 'error') addBubble(data.message, 'error');
             } catch (e) {}
           }
