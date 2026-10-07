@@ -292,6 +292,10 @@ async function penpotRequest(command, body = {}, retry = true) {
     return penpotRequest(command, body, false);
   }
 
+  if (res.status === 204) {
+    return { ok: true };
+  }
+
   if (res.status !== 200) {
     throw new Error(`Penpot ${command} error ${res.status}: ${res.body.slice(0, 300)}`);
   }
