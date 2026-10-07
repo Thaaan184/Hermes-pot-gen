@@ -164,6 +164,9 @@ services:
       PENPOT_SERVICE_PASS: ${PENPOT_SERVICE_PASS:-StudioSecretPassword123!}
       PENPOT_DEFAULT_PROJECT_ID: ${PENPOT_DEFAULT_PROJECT_ID:-5e8f6953-f7b8-8027-8008-c0ab390df7ef}
       MCP_URL: http://penpot-mcp:4401
+      LLM_ENDPOINT: ${LLM_ENDPOINT:-http://100.96.207.8:20128/v1/chat/completions}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-ag/gemini-3.8-flash}
     depends_on:
       - penpot-backend
       - penpot-mcp

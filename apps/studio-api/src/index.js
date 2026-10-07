@@ -14,6 +14,9 @@ const PENPOT_SERVICE_USER      = process.env.PENPOT_SERVICE_USER || 'studio-serv
 const PENPOT_SERVICE_PASS      = process.env.PENPOT_SERVICE_PASS || 'StudioSecretPassword123!';
 const PENPOT_DEFAULT_PROJECT_ID = process.env.PENPOT_DEFAULT_PROJECT_ID || '5e8f6953-f7b8-8027-8008-c0ab390df7ef';
 const MCP_URL                  = (process.env.MCP_URL || 'http://penpot-mcp:4401').replace(/\/$/, '');
+const LLM_ENDPOINT             = process.env.LLM_ENDPOINT || 'http://100.96.207.8:20128/v1/chat/completions';
+const LLM_API_KEY              = process.env.LLM_API_KEY || '';
+const LLM_MODEL                = process.env.LLM_MODEL || 'ag/gemini-3.8-flash';
 
 // ─── Transit+JSON Decoder ─────────────────────────────────────────────────────
 // Penpot backend returns Transit+JSON: ['^ ', '~:key', value, ...]
@@ -411,6 +414,81 @@ function parseSseBody(body) {
   return { _raw: body };
 }
 
+// ─── LLM Code Generator ───────────────────────────────────────────────────────
+async function generateCodeWithLlm(prompt) {
+  if (!LLM_API_KEY) return null;
+
+  const systemMessage = `You are an expert AI Graphic Designer for Penpot.
+Your task is to write JavaScript code using the Penpot Plugin API to create modern, beautiful design elements requested by the user.
+
+RULES:
+1. ONLY return pure JavaScript code inside an IIFE: (function() { ... })();
+2. Do NOT use markdown code fences, backticks, or explanatory text. Just the code.
+3. Penpot API rules:
+   - Access current page via: const page = penpot.currentPage;
+   - To create a container: const board = penpot.createBoard(); board.resize(w, h); board.name = '...';
+   - To create shapes: const rect = penpot.createRectangle(); rect.resize(w, h); rect.borderRadius = 16;
+   - To create text: const text = penpot.createText('content'); text.fontSize = '24'; text.fontFamily = 'Roboto'; text.growType = 'auto-height';
+   - Fills: shape.fills = [{ fillOpacity: 1, fillColor: '#HEXCAPS' }];
+   - Nesting: board.appendChild(shape);
+   - Center/Zoom: penpot.viewport.zoomIntoView([board], { padding: 40 });
+   - End with: return JSON.stringify({ success: true, boardId: board.id });
+4. Adhere to anti-slop design principles: clean layout, strong hierarchy, good contrast, no generic gradients.`;
+
+  const payload = JSON.stringify({
+    model: LLM_MODEL,
+    messages: [
+      { role: 'system', content: systemMessage },
+      { role: 'user', content: prompt }
+    ],
+    temperature: 0.2,
+    stream: false,
+  });
+
+  try {
+    const res = await rawFetch(LLM_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${LLM_API_KEY}`,
+      },
+      body: payload,
+    });
+
+    if (res.status !== 200) {
+      console.warn('[llm] LLM returned status:', res.status, res.body.slice(0, 150));
+      return null;
+    }
+
+    let content = '';
+    try {
+      const parsed = JSON.parse(res.body);
+      content = parsed.choices?.[0]?.message?.content || '';
+    } catch {
+      const lines = res.body.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const chunkStr = line.slice(5).trim();
+        if (chunkStr === '[DONE]') continue;
+        try {
+          const chunk = JSON.parse(chunkStr);
+          const delta = chunk.choices?.[0]?.delta?.content || '';
+          content += delta;
+        } catch {}
+      }
+    }
+
+    content = content.replace(/```(?:javascript|js)?\n?/gi, '').replace(/```\n?/g, '').trim();
+    if (content.includes('penpot.createBoard') || content.includes('penpot.createRectangle')) {
+      return content;
+    }
+  } catch (e) {
+    console.warn('[llm] Error calling LLM:', e.message);
+  }
+
+  return null;
+}
+
 // ─── Build MCP Code Snippet ───────────────────────────────────────────────────
 function buildMcpCode(prompt, canvasId, pageId) {
   const pLower = prompt.toLowerCase();
@@ -698,7 +776,10 @@ app.post('/api/chat', async (req, res) => {
 
     sendEvent({ type: 'status', message: 'Analyzing design prompt...' });
 
-    const code = buildMcpCode(prompt, canvasId, pageId);
+    let code = await generateCodeWithLlm(prompt);
+    if (!code) {
+      code = buildMcpCode(prompt, canvasId, pageId);
+    }
 
     let mcpResult = null;
     try {
