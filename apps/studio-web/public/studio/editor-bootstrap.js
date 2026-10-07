@@ -247,19 +247,14 @@
       // Enforce navigation isolation
       enforceNavigationGuard();
 
-      // 5. Load Penpot Modules & Synchronize
+      // 5. Load Penpot Shared Module & Synchronize
       currentStage = 'sync';
       logStage(currentStage);
-      const [mainMod, transMod, sharedMod] = await Promise.all([
-        import('/js/main.js?v=studio-core-1'),
-        import('/js/translation.en.js?v=studio-core-1'),
-        import('/js/shared.js?v=studio-core-1')
-      ]);
+      const sharedMod = await import('/js/shared.js?v=studio-core-1');
 
       // 6. Mount Real Workspace Core
       currentStage = 'workspace-mounted';
       logStage(currentStage);
-      mainMod.init({ defaultTranslations: transMod.default });
 
       // 7. Wire up Studio topbar sync
       initDocumentSync(fileId, sharedMod);

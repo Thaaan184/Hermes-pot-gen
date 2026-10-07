@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <base href="/" />
   <meta http-equiv="x-ua-compatible" content="ie=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Studio Design Editor</title>
@@ -17,6 +18,21 @@
     globalThis.penpotVersionTag = "studio-core-1";
     globalThis.penpotBuildDate = "Tue, 06 Oct 2026 12:26:35 +0000";
     globalThis.penpotPublicURI = window.location.origin + "/";
+  </script>
+
+  <script>
+    (function() {
+      var p = window.location.pathname;
+      var m = p.match(/\/studio\/canvas\/([a-f0-9\-]+)/i);
+      if (m) {
+        var fileId = m[1];
+        var urlParams = new URLSearchParams(window.location.search);
+        var teamId = urlParams.get('team-id') || localStorage.getItem('studio_team_id') || 'a1d810ca-c511-80b1-8008-c0b0dc7fb02f';
+        if (!window.location.hash.includes('workspace')) {
+          window.location.hash = '#/workspace?team-id=' + teamId + '&file-id=' + fileId;
+        }
+      }
+    })();
   </script>
 
   <script src="/js/config.js?v=studio-core-1"></script>
@@ -114,6 +130,12 @@
 
   <!-- Penpot Core Libraries & Studio Orchestrator -->
   <script type="module" src="/js/libs.js?v=studio-core-1"></script>
+  <script type="module">
+    import { init } from "/js/main.js?v=studio-core-1";
+    import defaultTranslations from "/js/translation.en.js?v=studio-core-1";
+
+    init({ defaultTranslations });
+  </script>
   <script type="module" src="/studio/editor-bootstrap.js?v=studio-core-1"></script>
 </body>
 </html>
