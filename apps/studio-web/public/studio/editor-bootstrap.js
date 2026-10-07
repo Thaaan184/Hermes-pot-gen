@@ -1,19 +1,17 @@
 /**
- * AI Design Studio — Editor Bootstrap & Shell Orchestrator
- * Mounts Penpot Workspace Core inside Studio Shell and isolates navigation.
+ * AI Design Studio — Editor Bootstrap & Acquisition Orchestrator
+ * Acquires native Penpot Workspace Core directly into Studio DOM.
  */
 
-(function() {
+(function () {
   'use strict';
 
-  // ── Logging helper ──
   function logStage(stage, detail) {
-    console.log(`[StudioEditor] ${stage}`, detail || '');
+    console.log(`[StudioAcquisition] ${stage}`, detail || '');
   }
 
-  // ── Error Boundary UI ──
   function showStudioError(stage, err) {
-    console.error(`[StudioEditor Error at ${stage}]:`, err);
+    console.error(`[StudioAcquisition Error at ${stage}]:`, err);
     const container = document.getElementById('studio-error-container');
     if (!container) return;
     document.getElementById('studio-error-stage').textContent = `Stage: ${stage}`;
@@ -21,7 +19,6 @@
     container.style.display = 'flex';
   }
 
-  // ── Extract file ID from path / URL ──
   function resolveFileId() {
     const path = window.location.pathname;
     const match = path.match(/\/studio\/canvas\/([a-f0-9\-]+)/i);
@@ -36,7 +33,6 @@
     return null;
   }
 
-  // ── AI Copilot Drawer Logic ──
   function initAiDrawer(fileId) {
     const drawer = document.getElementById('studio-ai-drawer');
     const toggleBtn = document.getElementById('studio-btn-ai');
@@ -117,25 +113,25 @@
     }
   }
 
-  // ── Sync Title & Persistence ──
-  function initDocumentSync(fileId, sharedMod) {
+  function initDocumentSync(fileId) {
     const titleInput = document.getElementById('studio-canvas-title');
     const statusPill = document.getElementById('studio-save-status');
     const statusText = statusPill?.querySelector('.status-text');
 
-    // Poll Penpot document store for file name and save state
+    // Polling file sync and status
     setInterval(() => {
       try {
-        if (!sharedMod || !sharedMod.$APP) return;
-        const $APP = sharedMod.$APP;
-        if (!$APP.$app$main$refs$current_file$$) return;
+        const $APP = window.$APP;
+        if (!$APP) return;
 
-        const currentFile = $APP.$rumext$v2$deref$$($APP.$app$main$refs$current_file$$);
-        if (currentFile && titleInput && document.activeElement !== titleInput) {
-          const name = $APP.$cljs$cst$454$name$$.$cljs$core$IFn$_invoke$arity$1$(currentFile);
-          if (name && titleInput.value !== name) {
-            titleInput.value = name;
-            document.title = `${name} — Studio Design Editor`;
+        if ($APP.$app$main$refs$current_file$$ && titleInput && document.activeElement !== titleInput) {
+          const currentFile = $APP.$rumext$v2$deref$$($APP.$app$main$refs$current_file$$);
+          if (currentFile) {
+            const name = $APP.$cljs$cst$454$name$$.$cljs$core$IFn$_invoke$arity$1$(currentFile);
+            if (name && titleInput.value !== name) {
+              titleInput.value = name;
+              document.title = `${name} — Studio Design Editor`;
+            }
           }
         }
 
@@ -156,70 +152,66 @@
       });
       titleInput.addEventListener('blur', () => {
         const val = titleInput.value.trim();
-        if (!val || !sharedMod?.$APP) return;
+        if (!val || !window.$APP) return;
         try {
-          const $APP = sharedMod.$APP;
+          const $APP = window.$APP;
           $APP.$app$main$store$emit_BANG_$$.$cljs$core$IFn$_invoke$arity$1$(
-            $APP.$app$main$data$workspace$rename_file$$($APP.$app$common$uuid$parse_STAR_$$(fileId), val)
+            $APP.$app$main$data$workspace$rename_file$$(
+              $APP.$app$common$uuid$parse_STAR_$$(fileId), val
+            )
           );
         } catch(e) {
-          console.warn('[StudioEditor] rename failed:', e);
+          console.warn('[StudioAcquisition] rename failed:', e);
         }
       });
     }
 
-    // Export Button
+    // Export button
     const exportBtn = document.getElementById('studio-btn-export');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        // Trigger export panel or modal in Penpot workspace
-        try {
-          const $APP = sharedMod.$APP;
-          // Trigger export dialog if available
-          alert('Select a board or shape on canvas to export (PNG/SVG/PDF).');
-        } catch(e) {}
+        alert('Select a board or frame on the canvas to export.');
       });
     }
   }
 
-  // ── Navigation Isolation ──
   function enforceNavigationGuard() {
-    // Intercept hash change towards Penpot dashboard
     window.addEventListener('hashchange', () => {
       const h = window.location.hash;
       if (h.includes('dashboard') || h.startsWith('#/auth') || h === '#/') {
-        console.warn('[StudioEditor] Blocked navigation to Penpot dashboard. Redirecting to Studio...');
+        console.warn('[StudioAcquisition] Neutralized dashboard redirect. Redirecting to Studio...');
         window.location.replace('/studio/');
       }
     });
 
-    // MutationObserver to neutralize any click leaks from native UI
+    // Guard native links
     const obs = new MutationObserver(() => {
       const leftHeader = document.querySelector('.main_ui_workspace_left_header__workspace-header-left');
       if (leftHeader) leftHeader.style.display = 'none';
 
-      // Intercept any anchor linking to dashboard
       const dashLinks = document.querySelectorAll('a[href*="#/dashboard"]');
       dashLinks.forEach(a => {
         a.href = '/studio/';
-        a.onclick = e => { e.preventDefault(); window.location.href = '/studio/'; };
+        a.onclick = e => {
+          e.preventDefault();
+          window.location.href = '/studio/';
+        };
       });
     });
 
     obs.observe(document.body, { childList: true, subtree: true });
   }
 
-  // ── Main Bootstrap Pipeline ──
   async function bootstrap() {
     let currentStage = 'init';
     try {
-      // 1. File resolution
+      // 1. File Resolution
       currentStage = 'file';
       logStage(currentStage);
       const fileId = resolveFileId();
       if (!fileId) throw new Error('No valid Canvas/File ID found in URL.');
 
-      // 2. Auth & Session resolution
+      // 2. Auth Session Resolution
       currentStage = 'auth';
       logStage(currentStage);
       const authRes = await fetch('/studio-api/api/auth-session');
@@ -227,44 +219,48 @@
       const authData = await authRes.json();
       if (!authData.ok) throw new Error('Failed to resolve authenticated Studio session');
 
-      // 3. Team resolution
+      // 3. Team Resolution
       currentStage = 'team';
       logStage(currentStage);
       const teamId = authData.teamId;
-      if (!teamId) throw new Error('No Team ID associated with service account');
+      if (!teamId) throw new Error('No Team ID found for current session');
 
-      // 4. Setup internal router hash
-      currentStage = 'workspace-state';
+      // 4. Ensure public URI matches current location exactly
+      globalThis.penpotPublicURI = window.location.origin + window.location.pathname;
+
+      // 5. Workspace Route Preparation
+      currentStage = 'workspace-routing';
       logStage(currentStage, { fileId, teamId });
       const targetHash = `#/workspace?team-id=${teamId}&file-id=${fileId}`;
-      if (window.location.hash !== targetHash) {
-        window.location.hash = targetHash;
-      }
+      window.location.hash = targetHash;
 
-      // Initialize AI Drawer
+      // Initialize UI controls
       initAiDrawer(fileId);
-
-      // Enforce navigation isolation
       enforceNavigationGuard();
 
-      // 5. Load Penpot Shared Module & Synchronize
-      currentStage = 'sync';
+      // 6. Dynamic Penpot Engine Acquisition
+      currentStage = 'penpot-core-load';
       logStage(currentStage);
-      const sharedMod = await import('/js/shared.js?v=studio-core-1');
+      await import('/js/libs.js?version=2.18.3-1791289595');
+      const { init } = await import('/js/main.js?version=2.18.3-1791289595');
+      const defaultTranslations = (
+        await import('/js/translation.en.js?version=2.18.3-1791289595')
+      ).default;
 
-      // 6. Mount Real Workspace Core
-      currentStage = 'workspace-mounted';
+      // 7. Mount Native Workspace into #app
+      currentStage = 'workspace-mount';
       logStage(currentStage);
+      init({ defaultTranslations });
 
-      // 7. Wire up Studio topbar sync
-      initDocumentSync(fileId, sharedMod);
+      // 8. Wire Studio Topbar State
+      initDocumentSync(fileId);
+      logStage('workspace-ready');
 
     } catch (err) {
       showStudioError(currentStage, err);
     }
   }
 
-  // Start bootstrap on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bootstrap);
   } else {
