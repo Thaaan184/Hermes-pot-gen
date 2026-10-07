@@ -8,6 +8,22 @@
     return;
   }
 
+  // 0b. Auto-heal missing team-id in workspace route (Penpot Clojure router requires team-id)
+  if (h.indexOf('workspace') !== -1 && h.indexOf('team-id=') === -1) {
+    var fileMatch = h.match(/file-id=([a-f0-9\-]+)/i);
+    if (fileMatch) {
+      var targetFileId = fileMatch[1];
+      fetch('/studio-api/api/auth-session')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.teamId) {
+            window.location.replace('/#/workspace?team-id=' + data.teamId + '&file-id=' + targetFileId);
+          }
+        })
+        .catch(function() {});
+    }
+  }
+
   // 1. Brand title
   function updateTitle() {
     if (document.title && !document.title.includes('AI Design Studio')) {

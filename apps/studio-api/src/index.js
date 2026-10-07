@@ -225,6 +225,7 @@ async function getProjectId() {
     const prof = await penpotRequest('get-profile');
     if (prof && prof.defaultProjectId) {
       session.defaultProjectId = prof.defaultProjectId;
+      if (prof.defaultTeamId) session.defaultTeamId = prof.defaultTeamId;
       return session.defaultProjectId;
     }
   } catch (e) {
@@ -242,6 +243,34 @@ async function getProjectId() {
   }
 
   return PENPOT_DEFAULT_PROJECT_ID;
+}
+
+async function getTeamId() {
+  if (session.defaultTeamId) return session.defaultTeamId;
+  await getToken();
+  if (session.defaultTeamId) return session.defaultTeamId;
+
+  try {
+    const prof = await penpotRequest('get-profile');
+    if (prof && prof.defaultTeamId) {
+      session.defaultTeamId = prof.defaultTeamId;
+      return session.defaultTeamId;
+    }
+  } catch (e) {
+    console.warn('[auth] get-profile for team failed:', e.message);
+  }
+
+  try {
+    const teams = await penpotRequest('get-teams');
+    if (Array.isArray(teams) && teams.length > 0) {
+      session.defaultTeamId = teams[0].id;
+      return session.defaultTeamId;
+    }
+  } catch (e) {
+    console.warn('[auth] get-teams failed:', e.message);
+  }
+
+  return null;
 }
 
 // ─── Penpot API Helper ────────────────────────────────────────────────────────
@@ -396,8 +425,10 @@ app.all('/internal/auth', async (req, res) => {
 app.get('/api/auth-session', async (req, res) => {
   try {
     const token = await getToken();
+    const teamId = await getTeamId();
+    const projectId = await getProjectId();
     res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
-    res.status(200).json({ ok: true });
+    res.status(200).json({ ok: true, teamId, projectId });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -410,6 +441,7 @@ app.get('/api/canvas', async (req, res) => {
     res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
 
     const projectId = await getProjectId();
+    const teamId = await getTeamId();
     const data = await penpotRequest('get-project-files', { projectId });
     // data may be array of file objects
     const files = Array.isArray(data) ? data : (data.files || []);
@@ -419,7 +451,8 @@ app.get('/api/canvas', async (req, res) => {
         id: f.id,
         name: f.name || 'Untitled Canvas',
         updatedAt: f.updatedAt || f.modifiedAt || new Date().toISOString(),
-        projectId: f.projectId,
+        projectId: f.projectId || projectId,
+        teamId: f.teamId || teamId,
       }));
     res.json(result);
   } catch (e) {
@@ -436,13 +469,16 @@ app.post('/api/canvas', async (req, res) => {
     res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
 
     const projectId = await getProjectId();
+    const teamId = await getTeamId();
     const data = await penpotRequest('create-file', { name, projectId });
     const id = data.id;
+    const redirectUrl = teamId ? `/#/workspace?team-id=${teamId}&file-id=${id}` : `/#/workspace?file-id=${id}`;
     res.json({
       id,
       name: data.name || name,
       fileId: id,
-      redirectUrl: `/#/workspace?file-id=${id}`,
+      teamId,
+      redirectUrl,
     });
   } catch (e) {
     console.error('[canvas create]', e.message);
