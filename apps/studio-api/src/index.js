@@ -74,7 +74,7 @@ function parseTransitResponse(text) {
 }
 
 // ─── Session Manager ──────────────────────────────────────────────────────────
-let session = { token: null, expires: 0 };
+let session = { token: null, expires: 0, defaultProjectId: null, defaultTeamId: null };
 
 async function rawFetch(url, options = {}) {
   return new Promise((resolve, reject) => {
@@ -101,25 +101,63 @@ async function rawFetch(url, options = {}) {
   });
 }
 
-async function loginPenpot() {
-  const url = `${PENPOT_BACKEND_URL}/api/main/methods/login-with-password`;
-  const body = JSON.stringify({ email: PENPOT_SERVICE_USER, password: PENPOT_SERVICE_PASS });
-  const res = await rawFetch(url, {
+async function bootstrapRegister() {
+  console.log('[auth] Attempting bootstrap registration for service account...');
+  const prepareUrl = `${PENPOT_BACKEND_URL}/api/main/methods/prepare-register-profile`;
+  const prepareRes = await rawFetch(prepareUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/transit+json' },
-    body,
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/transit+json, application/json' },
+    body: JSON.stringify({
+      fullname: 'Studio Service Account',
+      email: PENPOT_SERVICE_USER,
+      password: PENPOT_SERVICE_PASS,
+      acceptNewsletterUpdates: false,
+    }),
   });
 
-  if (res.status !== 200) {
-    throw new Error(`Penpot login failed: ${res.status} ${res.body.slice(0, 200)}`);
+  if (prepareRes.status !== 200) {
+    throw new Error(`Bootstrap prepare-register failed: ${prepareRes.status} ${prepareRes.body.slice(0, 200)}`);
   }
 
-  // Extract auth-token from Set-Cookie
+  // Token is in transit array: ['^ ', '~:token', 'eyJ...'] or decoded
+  const prepareDecoded = parseTransitResponse(prepareRes.body);
+  let regToken = prepareDecoded && prepareDecoded.token;
+  if (!regToken && Array.isArray(prepareDecoded)) {
+    // Look for token string
+    for (let i = 0; i < prepareDecoded.length; i++) {
+      if (typeof prepareDecoded[i] === 'string' && prepareDecoded[i].startsWith('eyJ')) {
+        regToken = prepareDecoded[i];
+        break;
+      }
+    }
+  }
+  if (!regToken) {
+    // Try raw regex match
+    const match = prepareRes.body.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+    if (match) regToken = match[0];
+  }
+  if (!regToken) throw new Error('Could not extract registration token from prepare response');
+
+  const regUrl = `${PENPOT_BACKEND_URL}/api/main/methods/register-profile`;
+  const regRes = await rawFetch(regUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/transit+json, application/json' },
+    body: JSON.stringify({ token: regToken, acceptNewsletterUpdates: false }),
+  });
+
+  if (regRes.status !== 200) {
+    throw new Error(`Bootstrap register-profile failed: ${regRes.status} ${regRes.body.slice(0, 200)}`);
+  }
+
+  return processLoginResponse(regRes);
+}
+
+function processLoginResponse(res) {
   const setCookie = res.headers['set-cookie'];
-  if (!setCookie) throw new Error('No Set-Cookie in login response');
+  if (!setCookie) throw new Error('No Set-Cookie in login/register response');
 
   let token = null;
-  let expires = Date.now() + 3600 * 1000; // default 1h
+  let expires = Date.now() + 7 * 24 * 3600 * 1000; // default 7d
 
   const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
   for (const c of cookies) {
@@ -136,14 +174,74 @@ async function loginPenpot() {
   }
 
   if (!token) throw new Error('auth-token not found in Set-Cookie');
-  session = { token, expires };
-  console.log(`[auth] Logged in, token expires ${new Date(expires).toISOString()}`);
+
+  const profile = parseTransitResponse(res.body) || {};
+  const defaultProjectId = profile.defaultProjectId || (profile.props && profile.props.defaultProjectId);
+  const defaultTeamId = profile.defaultTeamId;
+
+  session = {
+    token,
+    expires,
+    defaultProjectId: defaultProjectId || session.defaultProjectId,
+    defaultTeamId: defaultTeamId || session.defaultTeamId,
+  };
+
+  console.log(`[auth] Authenticated. Token expires ${new Date(expires).toISOString()}, defaultProject=${session.defaultProjectId}`);
   return token;
+}
+
+async function loginPenpot() {
+  const url = `${PENPOT_BACKEND_URL}/api/main/methods/login-with-password`;
+  const body = JSON.stringify({ email: PENPOT_SERVICE_USER, password: PENPOT_SERVICE_PASS });
+  const res = await rawFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/transit+json, application/json' },
+    body,
+  });
+
+  if (res.status === 400 && res.body.includes('wrong-credentials')) {
+    // Profile might not exist yet in fresh database - bootstrap registration
+    return bootstrapRegister();
+  }
+
+  if (res.status !== 200) {
+    throw new Error(`Penpot login failed: ${res.status} ${res.body.slice(0, 200)}`);
+  }
+
+  return processLoginResponse(res);
 }
 
 async function getToken() {
   if (session.token && Date.now() < session.expires - 60000) return session.token;
   return loginPenpot();
+}
+
+async function getProjectId() {
+  if (session.defaultProjectId) return session.defaultProjectId;
+  await getToken();
+  if (session.defaultProjectId) return session.defaultProjectId;
+
+  try {
+    const prof = await penpotRequest('get-profile');
+    if (prof && prof.defaultProjectId) {
+      session.defaultProjectId = prof.defaultProjectId;
+      return session.defaultProjectId;
+    }
+  } catch (e) {
+    console.warn('[auth] get-profile failed:', e.message);
+  }
+
+  try {
+    const projects = await penpotRequest('get-projects');
+    if (Array.isArray(projects) && projects.length > 0) {
+      session.defaultProjectId = projects[0].id;
+      return session.defaultProjectId;
+    }
+  } catch (e) {
+    console.warn('[auth] get-projects failed:', e.message);
+  }
+
+  return PENPOT_DEFAULT_PROJECT_ID;
 }
 
 // ─── Penpot API Helper ────────────────────────────────────────────────────────
@@ -297,7 +395,8 @@ app.post('/internal/auth', async (req, res) => {
 // List canvases (files in default project)
 app.get('/api/canvas', async (req, res) => {
   try {
-    const data = await penpotRequest('get-project-files', { projectId: PENPOT_DEFAULT_PROJECT_ID });
+    const projectId = await getProjectId();
+    const data = await penpotRequest('get-project-files', { projectId });
     // data may be array of file objects
     const files = Array.isArray(data) ? data : (data.files || []);
     const result = files.map(f => ({
@@ -317,7 +416,8 @@ app.get('/api/canvas', async (req, res) => {
 app.post('/api/canvas', async (req, res) => {
   const name = (req.body && req.body.name) ? req.body.name : 'Untitled Canvas';
   try {
-    const data = await penpotRequest('create-file', { name, projectId: PENPOT_DEFAULT_PROJECT_ID });
+    const projectId = await getProjectId();
+    const data = await penpotRequest('create-file', { name, projectId });
     const id = data.id;
     res.json({
       id,
