@@ -6,3 +6,4 @@ apps/*/node_modules/
 dist/
 .DS_Store
 output_preview.png
+*.png
