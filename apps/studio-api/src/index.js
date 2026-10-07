@@ -381,10 +381,10 @@ app.get('/health', (req, res) => {
 });
 
 // Internal auth (nginx auth_request target)
-app.post('/internal/auth', async (req, res) => {
+app.all('/internal/auth', async (req, res) => {
   try {
     const token = await getToken();
-    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax; HttpOnly`);
+    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('[auth] Failed:', e.message);
@@ -392,9 +392,23 @@ app.post('/internal/auth', async (req, res) => {
   }
 });
 
+// Auth session endpoint for frontend pre-warming
+app.get('/api/auth-session', async (req, res) => {
+  try {
+    const token = await getToken();
+    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
+    res.status(200).json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // List canvases (files in default project)
 app.get('/api/canvas', async (req, res) => {
   try {
+    const token = await getToken();
+    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
+
     const projectId = await getProjectId();
     const data = await penpotRequest('get-project-files', { projectId });
     // data may be array of file objects
@@ -418,6 +432,9 @@ app.get('/api/canvas', async (req, res) => {
 app.post('/api/canvas', async (req, res) => {
   const name = (req.body && req.body.name) ? req.body.name : 'Untitled Canvas';
   try {
+    const token = await getToken();
+    res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
+
     const projectId = await getProjectId();
     const data = await penpotRequest('create-file', { name, projectId });
     const id = data.id;

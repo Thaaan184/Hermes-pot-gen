@@ -525,6 +525,7 @@
   }
 
   // ── Init ──
+  fetch('/studio-api/api/auth-session').catch(() => {});
   loadCanvases();
 </script>
 </body>

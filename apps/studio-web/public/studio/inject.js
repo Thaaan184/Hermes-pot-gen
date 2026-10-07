@@ -1,6 +1,13 @@
 (function() {
   'use strict';
 
+  // 0. Redirect naked root / login / Penpot dashboard back to AI Design Studio dashboard
+  var h = window.location.hash;
+  if (!h || h === '#/' || h.startsWith('#/auth') || h.startsWith('#/dashboard')) {
+    window.location.replace('/studio/');
+    return;
+  }
+
   // 1. Brand title
   function updateTitle() {
     if (document.title && !document.title.includes('AI Design Studio')) {
