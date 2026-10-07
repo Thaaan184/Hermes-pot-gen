@@ -472,7 +472,7 @@ app.post('/api/canvas', async (req, res) => {
     const teamId = await getTeamId();
     const data = await penpotRequest('create-file', { name, projectId });
     const id = data.id;
-    const redirectUrl = teamId ? `/#/workspace?team-id=${teamId}&file-id=${id}` : `/#/workspace?file-id=${id}`;
+    const redirectUrl = `/studio/canvas/${id}`;
     res.json({
       id,
       name: data.name || name,

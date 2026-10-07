@@ -479,8 +479,7 @@
     canvases.forEach(c => {
       const card = document.createElement('div');
       card.className = 'canvas-card';
-      const teamId = c.teamId || cachedTeamId;
-      const openHref = teamId ? `/#/workspace?team-id=${escHtml(teamId)}&file-id=${escHtml(c.id)}` : `/#/workspace?file-id=${escHtml(c.id)}`;
+      const openHref = `/studio/canvas/${escHtml(c.id)}`;
       card.innerHTML = `
         <div class="card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -521,7 +520,7 @@
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
       closeCreateModal();
       showToast('Canvas created! Opening...', 'success');
-      setTimeout(() => { window.location.href = data.redirectUrl; }, 800);
+      setTimeout(() => { window.location.href = `/studio/canvas/${data.id}`; }, 800);
     } catch (e) {
       showToast(e.message, 'error');
       btn.disabled = false;
