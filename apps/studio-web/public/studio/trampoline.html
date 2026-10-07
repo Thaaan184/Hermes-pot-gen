@@ -70,7 +70,7 @@
         if (!data.ok || !data.teamId) throw new Error("Could not resolve team session");
 
         // Navigate cleanly to workspace route
-        window.location.replace(`/#/workspace?team-id=${data.teamId}&file-id=${fileId}`);
+        window.location.replace(`/index.html#/workspace?team-id=${data.teamId}&file-id=${fileId}`);
       } catch (err) {
         document.getElementById('spinner').style.display = 'none';
         document.getElementById('status-label').textContent = 'Unable to launch canvas';
