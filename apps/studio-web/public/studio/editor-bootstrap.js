@@ -251,9 +251,9 @@
       currentStage = 'sync';
       logStage(currentStage);
       const [mainMod, transMod, sharedMod] = await Promise.all([
-        import('/js/main.js'),
-        import('/js/translation.en.js?version=2.18.3-1791289595'),
-        import('/js/shared.js')
+        import('/js/main.js?v=studio-core-1'),
+        import('/js/translation.en.js?v=studio-core-1'),
+        import('/js/shared.js?v=studio-core-1')
       ]);
 
       // 6. Mount Real Workspace Core
