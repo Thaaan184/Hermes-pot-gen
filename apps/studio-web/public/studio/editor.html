@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio Design Editor</title>
+
+  <link id="theme" href="/css/main.css?version=2.18.3-1791289595" rel="stylesheet" type="text/css" />
+  <link href="/css/ui.css?version=2.18.3-1791289595" rel="stylesheet" type="text/css" />
+  <link href="/studio/editor.css" rel="stylesheet" type="text/css" />
+
+  <script type="importmap">{"imports":{"./js/shared.js":"/js/shared.js?version=2.18.3-1791289595","./js/main.js":"/js/main.js?version=2.18.3-1791289595","./js/render.js":"/js/render.js?version=2.18.3-1791289595","./js/render-wasm.js":"/js/render-wasm.js?version=2.18.3-1791289595","./js/rasterizer.js":"/js/rasterizer.js?version=2.18.3-1791289595","./js/main-dashboard.js":"/js/main-dashboard.js?version=2.18.3-1791289595","./js/main-auth.js":"/js/main-auth.js?version=2.18.3-1791289595","./js/main-viewer.js":"/js/main-viewer.js?version=2.18.3-1791289595","./js/main-settings.js":"/js/main-settings.js?version=2.18.3-1791289595","./js/main-workspace.js":"/js/main-workspace.js?version=2.18.3-1791289595","./js/util-highlight.js":"/js/util-highlight.js?version=2.18.3-1791289595"}}</script>
+
+  <script type="module">
+    globalThis.penpotVersion = "2.18.3";
+    globalThis.penpotVersionTag = "2.18.3-1791289595";
+    globalThis.penpotBuildDate = "Tue, 06 Oct 2026 12:26:35 +0000";
+    globalThis.penpotPublicURI = window.location.origin + "/";
+  </script>
+
+  <script src="/js/config.js?version=2.18.3-1791289595"></script>
+  <script src="/js/polyfills.js?version=2.18.3-1791289595"></script>
+</head>
+<body>
+  <!-- Penpot UI SVG Symbols -->
+  <div id="penpot-symbols-root" style="display:none"></div>
+  <script>
+    fetch('/studio/symbols.svg')
+      .then(r => r.text())
+      .then(svg => { document.getElementById('penpot-symbols-root').innerHTML = svg; })
+      .catch(e => console.warn('Symbols load deferred:', e));
+  </script>
+
+  <!-- Studio Topbar Shell -->
+  <header id="studio-header">
+    <div class="studio-header-left">
+      <a href="/studio/" class="btn-studio-back" title="Back to Canvases">
+        <svg class="studio-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Studio</span>
+      </a>
+      <div class="header-divider"></div>
+      <div class="canvas-title-wrapper">
+        <input id="studio-canvas-title" type="text" value="Untitled Canvas" spellcheck="false" />
+      </div>
+      <div id="studio-save-status" class="status-pill saved">
+        <span class="status-dot"></span>
+        <span class="status-text">Saved</span>
+      </div>
+    </div>
+    <div class="studio-header-right">
+      <button id="studio-btn-export" class="btn-tool" title="Export Design">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Export</span>
+      </button>
+      <button id="studio-btn-ai" class="btn-tool btn-ai" title="Toggle AI Copilot">
+        <span class="ai-sparkle">✨</span>
+        <span>AI Copilot</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Workspace Mounting Container -->
+  <main id="studio-workspace-container">
+    <div id="app"></div>
+    <section id="modal"></section>
+  </main>
+
+  <!-- AI Copilot Side Drawer -->
+  <aside id="studio-ai-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <span style="color:#38BDF8">✨</span>
+        <span>AI Copilot</span>
+      </div>
+      <button id="drawer-close" class="btn-drawer-close" title="Close Drawer">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div id="drawer-messages" class="drawer-messages">
+        <div class="ai-bubble status">Describe what you want to create or adjust on this canvas.</div>
+      </div>
+      <div class="drawer-input-box">
+        <textarea id="drawer-prompt" placeholder="E.g., Design a modern B2B SaaS architecture diagram..." rows="3"></textarea>
+        <button id="drawer-send">Generate</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Studio Error UI (Black Screen Prevention) -->
+  <div id="studio-error-container" style="display:none;">
+    <div class="error-card">
+      <div class="error-icon-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h2>Unable to open canvas</h2>
+      <div id="studio-error-stage" class="error-stage">Stage: init</div>
+      <p id="studio-error-msg" class="error-msg">An unexpected error occurred while initializing the editor.</p>
+      <div class="error-actions">
+        <button onclick="window.location.reload()" class="btn-retry">Retry</button>
+        <a href="/studio/" class="btn-back-home">Back to Studio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Penpot Core Libraries & Studio Orchestrator -->
+  <script type="module" src="/js/libs.js?version=2.18.3-1791289595"></script>
+  <script type="module" src="/studio/editor-bootstrap.js"></script>
+</body>
+</html>

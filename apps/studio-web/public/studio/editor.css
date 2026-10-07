@@ -1,0 +1,477 @@
+/* ── AI Design Studio — Editor Shell Styles ───────────────────────── */
+
+:root {
+  --studio-bg: #0B0F19;
+  --studio-header-bg: #0E1526;
+  --studio-border: #1E293B;
+  --studio-text: #F8FAFC;
+  --studio-muted: #94A3B8;
+  --studio-accent: #0284C7;
+  --studio-accent-hover: #0369A1;
+  --studio-green: #10B981;
+  --studio-amber: #F59E0B;
+  --studio-red: #EF4444;
+  --studio-header-h: 44px;
+}
+
+/* Reset for shell */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--studio-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  color: var(--studio-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Topbar Shell ────────────────────────────────────────────────────────── */
+#studio-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--studio-header-h);
+  background: var(--studio-header-bg);
+  border-bottom: 1px solid var(--studio-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  z-index: 10000;
+  user-select: none;
+}
+
+.studio-header-left, .studio-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Back button */
+.btn-studio-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-studio-back:hover {
+  background: #162032;
+  border-color: var(--studio-border);
+  color: #38BDF8;
+}
+
+.studio-logo-icon {
+  width: 18px;
+  height: 18px;
+  fill: #38BDF8;
+}
+
+.header-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--studio-border);
+}
+
+/* Canvas Title */
+.canvas-title-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+#studio-canvas-title {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--studio-text);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 8px;
+  outline: none;
+  max-width: 240px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+#studio-canvas-title:hover {
+  background: #162032;
+  border-color: var(--studio-border);
+}
+
+#studio-canvas-title:focus {
+  background: #162032;
+  border-color: var(--studio-accent);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+/* Status Pill */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--studio-muted);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--studio-green);
+  transition: background 0.2s;
+}
+
+.status-pill.saving .status-dot {
+  background: var(--studio-amber);
+  animation: pulse-dot 1s infinite alternate;
+}
+
+@keyframes pulse-dot {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+/* Tool buttons */
+.btn-tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid var(--studio-border);
+  background: #162032;
+  color: var(--studio-text);
+  font-family: inherit;
+}
+
+.btn-tool:hover {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+.btn-ai {
+  background: var(--studio-accent);
+  border-color: #0284C7;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.btn-ai:hover {
+  background: var(--studio-accent-hover);
+  border-color: var(--studio-accent-hover);
+}
+
+.btn-ai.active {
+  background: #0369A1;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
+}
+
+/* ── Workspace Container ─────────────────────────────────────────────────── */
+#studio-workspace-container {
+  position: fixed;
+  top: var(--studio-header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: #18181A;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Neutralize Penpot Native Left Header ────────────────────────────────── */
+/* Penpot's native left_header contains the logo and DRAFTS links that lead to dashboard */
+.main_ui_workspace_left_header__workspace-header-left {
+  display: none !important;
+}
+
+/* Adjust left sidebar top padding so layers start cleanly under the Studio header */
+#left-sidebar-aside {
+  top: 0 !important;
+}
+
+/* Adjust right sidebar header position */
+.main_ui_workspace_right_header__workspace-header-right {
+  top: 0 !important;
+}
+
+/* Hide Penpot presentation/share dashboard buttons if needed */
+.main_ui_workspace_right_header__workspace-header-right a[href*="dashboard"] {
+  display: none !important;
+}
+
+/* ── AI Copilot Drawer ───────────────────────────────────────────────────── */
+#studio-ai-drawer {
+  position: fixed;
+  top: var(--studio-header-h);
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  background: #0F172A;
+  border-left: 1px solid var(--studio-border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#studio-ai-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #162032;
+  border-bottom: 1px solid var(--studio-border);
+}
+
+.drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.btn-drawer-close {
+  background: none;
+  border: none;
+  color: var(--studio-muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-drawer-close:hover {
+  color: var(--studio-text);
+  background: var(--studio-border);
+}
+
+.drawer-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.drawer-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-bubble {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.ai-bubble.user {
+  background: #1E293B;
+  color: #F8FAFC;
+  align-self: flex-end;
+}
+
+.ai-bubble.status {
+  background: #162032;
+  color: #94A3B8;
+  font-size: 11px;
+}
+
+.ai-bubble.success {
+  background: #062820;
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ai-bubble.error {
+  background: #2A1215;
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.drawer-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#drawer-prompt {
+  background: #162032;
+  border: 1px solid var(--studio-border);
+  border-radius: 8px;
+  color: var(--studio-text);
+  padding: 10px;
+  font-size: 12px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+#drawer-prompt:focus {
+  border-color: var(--studio-accent);
+}
+
+#drawer-send {
+  background: var(--studio-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+#drawer-send:hover {
+  background: var(--studio-accent-hover);
+}
+
+#drawer-send:disabled {
+  background: #1E293B;
+  color: #64748B;
+  cursor: not-allowed;
+}
+
+/* ── Studio Error UI (Black Screen Prevention) ──────────────────────────── */
+#studio-error-container {
+  position: fixed;
+  inset: 0;
+  background: var(--studio-bg);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.error-card {
+  max-width: 440px;
+  width: 100%;
+  background: #0F172A;
+  border: 1px solid #1E293B;
+  border-radius: 14px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.error-icon-box {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-icon-box svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--studio-red);
+}
+
+.error-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--studio-text);
+}
+
+.error-stage {
+  display: inline-block;
+  font-size: 11px;
+  font-family: monospace;
+  background: #162032;
+  color: #38BDF8;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.error-msg {
+  font-size: 13px;
+  color: var(--studio-muted);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.error-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-retry, .btn-back-home {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.btn-retry {
+  background: var(--studio-accent);
+  color: #fff;
+  border: none;
+}
+
+.btn-retry:hover {
+  background: var(--studio-accent-hover);
+}
+
+.btn-back-home {
+  background: #1E293B;
+  color: var(--studio-text);
+  border: 1px solid var(--studio-border);
+}
+
+.btn-back-home:hover {
+  background: #334155;
+}
