@@ -399,12 +399,14 @@ app.get('/api/canvas', async (req, res) => {
     const data = await penpotRequest('get-project-files', { projectId });
     // data may be array of file objects
     const files = Array.isArray(data) ? data : (data.files || []);
-    const result = files.map(f => ({
-      id: f.id,
-      name: f.name,
-      updatedAt: f.updatedAt || f.modifiedAt,
-      projectId: f.projectId,
-    }));
+    const result = files
+      .filter(f => f && f.id)
+      .map(f => ({
+        id: f.id,
+        name: f.name || 'Untitled Canvas',
+        updatedAt: f.updatedAt || f.modifiedAt || new Date().toISOString(),
+        projectId: f.projectId,
+      }));
     res.json(result);
   } catch (e) {
     console.error('[canvas list]', e.message);
