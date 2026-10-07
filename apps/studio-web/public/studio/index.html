@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Design Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080C14;
+      --card: #0F172A;
+      --card-border: #1E293B;
+      --accent: #38BDF8;
+      --accent-hover: #0284C7;
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --success: #10B981;
+      --error: #EF4444;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      background: var(--card);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-brand svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .header-brand span {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .btn-new {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+
+    .btn-new:hover { background: var(--accent-hover); }
+    .btn-new:active { transform: scale(0.97); }
+
+    /* ── Main ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Canvas Grid ── */
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) { .canvas-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .canvas-grid { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .canvas-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .canvas-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #818CF8);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .canvas-card:hover { border-color: #334155; transform: translateY(-2px); }
+    .canvas-card:hover::before { opacity: 1; }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      background: rgba(56,189,248,0.12);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-icon svg { width: 22px; height: 22px; color: var(--accent); }
+
+    .card-name {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .btn-open {
+      margin-top: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .btn-open:hover { background: rgba(56,189,248,0.08); border-color: var(--accent); }
+
+    /* ── States ── */
+    .state-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .state-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .state-icon.empty { background: rgba(56,189,248,0.1); }
+    .state-icon.error { background: rgba(239,68,68,0.1); }
+
+    .state-icon svg { width: 32px; height: 32px; }
+
+    .state-title { font-size: 18px; font-weight: 600; }
+    .state-sub { font-size: 14px; color: var(--muted); max-width: 340px; }
+
+    /* Spinner */
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--card-border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 999;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      max-width: 360px;
+    }
+
+    #toast.show { display: flex; }
+    #toast.success { border-left: 3px solid var(--success); }
+    #toast.error { border-left: 3px solid var(--error); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .modal h2 { font-size: 18px; font-weight: 700; }
+    .modal p { font-size: 14px; color: var(--muted); }
+
+    .modal input {
+      width: 100%;
+      background: #162032;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+
+    .modal input:focus { border-color: var(--accent); }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-cancel:hover { border-color: #475569; color: var(--text); }
+
+    .btn-create {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-create:hover { background: var(--accent-hover); }
+    .btn-create:disabled { background: #1E293B; color: #64748B; cursor: not-allowed; }
+
+    .btn-create .btn-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-create.loading .btn-spinner { display: block; }
+    .btn-create.loading .btn-label { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-brand">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="8" fill="#0284C7"/>
+      <path d="M8 14C8 10.686 10.686 8 14 8C17.314 8 20 10.686 20 14" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/>
+      <path d="M14 20C14 20 10 18 10 14" stroke="#7DD3FC" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="14" cy="14" r="2" fill="#F0F9FF"/>
+    </svg>
+    <span>AI Design Studio</span>
+  </div>
+  <button class="btn-new" onclick="openCreateModal()">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    New Canvas
+  </button>
+</header>
+
+<!-- Main -->
+<main>
+  <h1 class="section-title">Your Canvases</h1>
+  <div id="content"></div>
+</main>
+
+<!-- Create Modal -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <h2>New Canvas</h2>
+    <p>Give your canvas a name to get started.</p>
+    <input type="text" id="canvasName" placeholder="Untitled Canvas" maxlength="120" />
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn-create" id="createBtn" onclick="createCanvas()">
+        <div class="btn-spinner"></div>
+        <span class="btn-label">Create Canvas</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ── Helpers ──
+  function timeAgo(iso) {
+    if (!iso) return 'Unknown date';
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(m / 60);
+    const d = Math.floor(h / 24);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    if (h < 24) return `${h}h ago`;
+    if (d < 30) return `${d}d ago`;
+    return new Date(iso).toLocaleDateString();
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + (type || '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = ''; }, 4000);
+  }
+
+  // ── Modal ──
+  function openCreateModal() {
+    const modal = document.getElementById('createModal');
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('canvasName').focus(), 50);
+  }
+
+  function closeCreateModal() {
+    document.getElementById('createModal').classList.remove('show');
+    document.getElementById('canvasName').value = '';
+    const btn = document.getElementById('createBtn');
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+
+  document.getElementById('canvasName').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') createCanvas();
+    if (e.key === 'Escape') closeCreateModal();
+  });
+
+  document.getElementById('createModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCreateModal();
+  });
+
+  // ── Load Canvases ──
+  async function loadCanvases() {
+    const content = document.getElementById('content');
+    content.innerHTML = '<div class="state-wrapper"><div class="spinner"></div><p style="color:var(--muted);font-size:14px">Loading canvases...</p></div>';
+
+    try {
+      const res = await fetch('/studio-api/api/canvas');
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const canvases = await res.json();
+      renderCanvases(canvases);
+    } catch (e) {
+      content.innerHTML = `
+        <div class="state-wrapper">
+          <div class="state-icon error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <p class="state-title">Failed to load canvases</p>
+          <p class="state-sub">${e.message}</p>
+          <button class="btn-new" onclick="loadCanvases()" style="margin-top:8px">Retry</button>
+        </div>`;
+    }
+  }
+
+  function renderCanvases(canvases) {
+    const content = document.getElementById('content');
+    if (!canvases || canvases.length === 0) {
+      content.innerHTML = `
+        <div class="state-wrapper">
+          <div class="state-icon empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <path d="M3 9h18M9 21V9"/>
+            </svg>
+          </div>
+          <p class="state-title">No canvases yet</p>
+          <p class="state-sub">Create your first one to start designing with AI.</p>
+          <button class="btn-new" onclick="openCreateModal()" style="margin-top:8px">+ New Canvas</button>
+        </div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'canvas-grid';
+    canvases.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'canvas-card';
+      card.innerHTML = `
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <div class="card-name" title="${escHtml(c.name)}">${escHtml(c.name)}</div>
+        <div class="card-meta">Updated ${timeAgo(c.updatedAt)}</div>
+        <a class="btn-open" href="/#/workspace?file-id=${escHtml(c.id)}" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Open Canvas
+        </a>`;
+      grid.appendChild(card);
+    });
+    content.appendChild(grid);
+  }
+
+  function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Create Canvas ──
+  async function createCanvas() {
+    const input = document.getElementById('canvasName');
+    const name = input.value.trim() || 'Untitled Canvas';
+    const btn = document.getElementById('createBtn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    try {
+      const res = await fetch('/studio-api/api/canvas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+      closeCreateModal();
+      showToast('Canvas created! Opening...', 'success');
+      setTimeout(() => { window.location.href = data.redirectUrl; }, 800);
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
+
+  // ── Init ──
+  loadCanvases();
+</script>
+</body>
+</html>

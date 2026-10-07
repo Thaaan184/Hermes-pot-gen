@@ -1,0 +1,1 @@
+{"name":"studio-web","version":"1.0.0","scripts":{"start":"node server.js"},"dependencies":{"serve-static":"^1.15.0","finalhandler":"^1.2.0"}}

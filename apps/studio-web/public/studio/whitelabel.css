@@ -1,0 +1,33 @@
+/* AI Design Studio - Penpot White-Label Override */
+/* Hide Penpot branding and auth UI */
+
+/* Login/Auth pages - hide entirely when in editor */
+.auth-login-form { display: none !important; }
+.auth-register-form { display: none !important; }
+
+/* Penpot logo/brand in header */
+.app-header .brand { display: none !important; }
+.app-header .logo { display: none !important; }
+[class*='main-logo'] { display: none !important; }
+
+/* Cloud upgrade/subscribe buttons */
+[class*='upgrade'] { display: none !important; }
+[class*='subscribe'] { display: none !important; }
+[class*='cloud-upgrade'] { display: none !important; }
+
+/* Penpot feedback/notification banners */
+[class*='feedback-btn'] { display: none !important; }
+[class*='release-notes'] { display: none !important; }
+
+/* External navigation links */
+a[href*='penpot.app']:not([class*='internal']) { display: none !important; }
+a[href*='community.penpot'] { display: none !important; }
+a[href*='help.penpot'] { display: none !important; }
+
+/* Hide 'Open in Penpot cloud' type links */
+[class*='open-in-cloud'] { display: none !important; }
+
+/* Keep all canvas/editor/tool functionality visible */
+.workspace-layout { display: flex !important; }
+.workspace-left { display: flex !important; }
+.workspace-right { display: flex !important; }
