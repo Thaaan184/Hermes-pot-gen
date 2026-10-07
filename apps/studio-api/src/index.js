@@ -509,9 +509,9 @@ app.delete('/api/canvas/:id', async (req, res) => {
     const token = await getToken();
     res.setHeader('Set-Cookie', `auth-token=${token}; Path=/; SameSite=Lax`);
     try {
-      await penpotRequest('delete-file', { id });
+      await penpotRequest('delete-files', { ids: [id] });
     } catch {
-      await penpotRequest('mark-file-for-deletion', { id });
+      await penpotRequest('delete-file', { id });
     }
     res.json({ ok: true, id });
   } catch (e) {
