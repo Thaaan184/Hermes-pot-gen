@@ -147,3 +147,47 @@ services:
       - "1080:1080"
     networks:
       - penpot
+
+  # ── AI Design Studio Services ────────────────────────────────────────────────
+
+  studio-api:
+    build:
+      context: ./apps/studio-api
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - penpot
+    environment:
+      PORT: "4000"
+      PENPOT_BACKEND_URL: http://penpot-backend:6060
+      PENPOT_SERVICE_USER: ${PENPOT_SERVICE_USER:-studio-service@nct.internal}
+      PENPOT_SERVICE_PASS: ${PENPOT_SERVICE_PASS:-StudioSecretPassword123!}
+      PENPOT_DEFAULT_PROJECT_ID: ${PENPOT_DEFAULT_PROJECT_ID:-5e8f6953-f7b8-8027-8008-c0ab390df7ef}
+      MCP_URL: http://penpot-mcp:4401
+    depends_on:
+      - penpot-backend
+      - penpot-mcp
+
+  studio-web:
+    build:
+      context: ./apps/studio-web
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - penpot
+    environment:
+      PORT: "3000"
+
+  studio-edge:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx/studio.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - penpot-frontend
+      - studio-api
+      - studio-web
+    networks:
+      - penpot

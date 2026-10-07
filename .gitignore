@@ -1,5 +1,8 @@
 .env
+.env.local
 *.log
 node_modules/
+apps/*/node_modules/
 dist/
 .DS_Store
+output_preview.png
