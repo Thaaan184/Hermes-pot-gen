@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opening Canvas — Studio</title>
+  <style>
+    body {
+      background: #080C14;
+      color: #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .launcher-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px;
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #1E293B;
+      border-top-color: #38BDF8;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #F8FAFC;
+    }
+    .error {
+      color: #EF4444;
+      font-size: 12px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="launcher-box">
+    <div class="spinner" id="spinner"></div>
+    <div class="label" id="status-label">Opening Canvas...</div>
+    <div class="error" id="error-msg"></div>
+  </div>
+
+  <script>
+    (async () => {
+      try {
+        const path = window.location.pathname;
+        const fileId = path.split('/').filter(Boolean).pop();
+        if (!fileId) throw new Error("No canvas ID found in URL");
+
+        // Fetch session
+        const res = await fetch('/studio-api/api/auth-session');
+        if (!res.ok) throw new Error("Auth service error");
+        const data = await res.json();
+        if (!data.ok || !data.teamId) throw new Error("Could not resolve team session");
+
+        // Navigate cleanly to workspace route
+        window.location.replace(`/#/workspace?team-id=${data.teamId}&file-id=${fileId}`);
+      } catch (err) {
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('status-label').textContent = 'Unable to launch canvas';
+        const errEl = document.getElementById('error-msg');
+        errEl.textContent = err.message || String(err);
+        errEl.style.display = 'block';
+        setTimeout(() => { window.location.replace('/studio/'); }, 2000);
+      }
+    })();
+  </script>
+</body>
+</html>

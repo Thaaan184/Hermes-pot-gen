@@ -1,33 +1,331 @@
-/* AI Design Studio - Penpot White-Label Override */
-/* Hide Penpot branding and auth UI */
+/* AI Design Studio — Unified Studio Shell & Dark Design System Tokens */
 
-/* Login/Auth pages - hide entirely when in editor */
-.auth-login-form { display: none !important; }
-.auth-register-form { display: none !important; }
+:root {
+  --studio-bg: #080C14;
+  --studio-surface: #0F172A;
+  --studio-border: #1E293B;
+  --studio-border-hover: #334155;
+  --studio-accent: #38BDF8;
+  --studio-accent-hover: #0EA5E9;
+  --studio-text: #F8FAFC;
+  --studio-muted: #94A3B8;
+  --studio-subtle: #64748B;
+  --studio-danger: #EF4444;
+  --studio-success: #10B981;
+}
 
-/* Penpot logo/brand in header */
-.app-header .brand { display: none !important; }
-.app-header .logo { display: none !important; }
-[class*='main-logo'] { display: none !important; }
+/* ── Penpot Left Header Override ── */
+.main_ui_workspace_left_header__workspace-header-left {
+  display: none !important;
+}
 
-/* Cloud upgrade/subscribe buttons */
-[class*='upgrade'] { display: none !important; }
-[class*='subscribe'] { display: none !important; }
-[class*='cloud-upgrade'] { display: none !important; }
+/* ── Topbar Studio Shell ── */
+.studio-shell-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: var(--studio-bg);
+  border-bottom: 1px solid var(--studio-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-sizing: border-box;
+}
 
-/* Penpot feedback/notification banners */
-[class*='feedback-btn'] { display: none !important; }
-[class*='release-notes'] { display: none !important; }
+.studio-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-/* External navigation links */
-a[href*='penpot.app']:not([class*='internal']) { display: none !important; }
-a[href*='community.penpot'] { display: none !important; }
-a[href*='help.penpot'] { display: none !important; }
+.studio-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--studio-surface);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
 
-/* Hide 'Open in Penpot cloud' type links */
-[class*='open-in-cloud'] { display: none !important; }
+.studio-btn-back:hover {
+  background: #1E293B;
+  color: var(--studio-text);
+  border-color: var(--studio-border-hover);
+}
 
-/* Keep all canvas/editor/tool functionality visible */
-.workspace-layout { display: flex !important; }
-.workspace-left { display: flex !important; }
-.workspace-right { display: flex !important; }
+.studio-topbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--studio-border);
+}
+
+.studio-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--studio-accent);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.studio-title-box input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--studio-text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  max-width: 260px;
+}
+
+.studio-title-box input:hover,
+.studio-title-box input:focus {
+  border-color: var(--studio-border);
+  background: var(--studio-surface);
+}
+
+.studio-save-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--studio-muted);
+}
+
+.studio-save-pill .save-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--studio-success);
+}
+
+.studio-save-pill.saving .save-dot {
+  background: #F59E0B;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.studio-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.studio-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--studio-surface);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.studio-btn-export:hover {
+  background: #1E293B;
+  border-color: var(--studio-border-hover);
+}
+
+.studio-btn-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #0284C7, #0369A1);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+.studio-btn-ai:hover,
+.studio-btn-ai.active {
+  background: linear-gradient(135deg, #0EA5E9, #0284C7);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+}
+
+/* ── AI Copilot Drawer ── */
+.studio-ai-drawer {
+  position: fixed;
+  top: 48px;
+  right: -400px;
+  bottom: 0;
+  width: 380px;
+  background: var(--studio-bg);
+  border-left: 1px solid var(--studio-border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  z-index: 99990;
+  transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.studio-ai-drawer.open {
+  right: 0;
+}
+
+.drawer-header {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--studio-border);
+}
+
+.drawer-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--studio-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--studio-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.drawer-close-btn:hover {
+  color: var(--studio-text);
+  background: var(--studio-surface);
+}
+
+.drawer-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  gap: 12px;
+}
+
+.drawer-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-bubble {
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border-radius: 8px;
+  max-width: 90%;
+  word-break: break-word;
+}
+
+.ai-bubble.intro {
+  background: var(--studio-surface);
+  color: var(--studio-muted);
+  border: 1px solid var(--studio-border);
+}
+
+.ai-bubble.user {
+  background: #0369A1;
+  color: #FFFFFF;
+  align-self: flex-end;
+}
+
+.ai-bubble.status {
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--studio-accent);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.ai-bubble.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--studio-success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.ai-bubble.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--studio-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.drawer-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--studio-border);
+  padding-top: 12px;
+}
+
+.drawer-input-area textarea {
+  width: 100%;
+  background: var(--studio-surface);
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  color: var(--studio-text);
+  font-size: 12px;
+  padding: 8px;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.drawer-input-area textarea:focus {
+  border-color: var(--studio-accent);
+}
+
+.drawer-input-area button {
+  align-self: flex-end;
+  background: var(--studio-accent);
+  color: #080C14;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.drawer-input-area button:hover {
+  background: var(--studio-accent-hover);
+}
+
+.drawer-input-area button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
